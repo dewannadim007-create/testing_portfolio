@@ -41,15 +41,19 @@ window.setTheme = setTheme;
 
 /* ===== NAVBAR: HIDE ON SCROLL, SHOW WHEN IDLE ===== */
 const navbar = document.getElementById('navbar');
+const homeSection = document.getElementById('home');
 let scrollTimeout;
 let isScrolling = false;
 let lastScrollY = 0;
 
 function handleScroll() {
     const currentScrollY = window.scrollY;
+    const homeSectionBottom = homeSection
+        ? homeSection.offsetTop + homeSection.offsetHeight - 64
+        : 50;
     
-    // Always show navbar at top of page
-    if (currentScrollY <= 50) {
+    // Always show navbar while in home section
+    if (currentScrollY <= homeSectionBottom) {
         navbar.classList.add('visible');
         isScrolling = false;
         return;
@@ -154,3 +158,7 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             window.scrollTo({
                 top: target.offsetTop - 70,
                 behavior: 'smooth'
+            });
+        }
+    });
+});
