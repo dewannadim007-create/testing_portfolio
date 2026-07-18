@@ -806,6 +806,9 @@ body::before {
 }
 
 .skill-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   padding: 0.35rem 0.8rem;
@@ -814,6 +817,11 @@ body::before {
   color: var(--text-primary);
   transition: all var(--transition-fast);
   cursor: default;
+}
+
+.skill-tag i {
+  color: var(--accent-cyan);
+  font-size: 0.9em;
 }
 
 .skill-tag:hover,
