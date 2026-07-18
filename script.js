@@ -1,258 +1,290 @@
+/* ===== THEME SYSTEM ===== */
 const themeToggle = document.getElementById('theme-toggle');
 const themeIcon = document.getElementById('theme-icon');
 const html = document.documentElement;
 
-const currentTheme = localStorage.getItem('theme') || 'light';
-html.setAttribute('data-theme', currentTheme);
-updateThemeIcon(currentTheme);
+// Load saved theme or default to dark
+const savedTheme = localStorage.getItem('theme') || 'dark';
+html.setAttribute('data-theme', savedTheme);
+updateThemeIcon(savedTheme);
 
+// Nav toggle click handler
 themeToggle.addEventListener('click', () => {
     const currentTheme = html.getAttribute('data-theme');
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    html.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-    updateThemeIcon(newTheme);
+    setTheme(newTheme);
 });
+
+// Global theme setter (used by terminal too)
+function setTheme(theme) {
+    html.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    updateThemeIcon(theme);
+
+    // Optional: show subtle toast in terminal if open
+    if (typeof terminalOutput !== 'undefined' && terminalOutput) {
+        const toast = document.createElement('div');
+        toast.className = 'terminal-line';
+        toast.innerHTML = `<span class="t-comment"># Theme switched to ${theme} mode</span>`;
+        terminalOutput.appendChild(toast);
+        scrollToBottom();
+    }
+}
 
 function updateThemeIcon(theme) {
     if (theme === 'dark') {
-        themeIcon.classList.remove('fa-moon');
-        themeIcon.classList.add('fa-sun');
-    } else {
         themeIcon.classList.remove('fa-sun');
         themeIcon.classList.add('fa-moon');
-    }
-}
-
-themeToggle.addEventListener('click', (e) => {
-    e.stopPropagation();
-});
-
-const particlesContainer = document.getElementById('particles-js');
-
-if (particlesContainer) {
-    particlesJS("particles-js", {
-        "particles": {
-            "number": {
-                "value": 80,
-                "density": {
-                    "enable": true,
-                    "value_area": 800
-                }
-            },
-            "color": {
-                "value": "#aaaaaa"
-            },
-            "shape": {
-                "type": "circle"
-            },
-            "opacity": {
-                "value": 0.5,
-                "random": false
-            },
-            "size": {
-                "value": 3,
-                "random": true
-            },
-            "line_linked": {
-                "enable": true,
-                "distance": 150,
-                "color": "#aaaaaa",
-                "opacity": 0.4,
-                "width": 1
-            },
-            "move": {
-                "enable": true,
-                "speed": 2,
-                "direction": "none",
-                "random": false,
-                "straight": false,
-                "out_mode": "out",
-                "bounce": false
-            }
-        },
-        "interactivity": {
-            "detect_on": "canvas",
-            "events": {
-                "onhover": {
-                    "enable": true,
-                    "mode": "grab"
-                },
-                "onclick": {
-                    "enable": true,
-                    "mode": "push"
-                },
-                "resize": true
-            },
-            "modes": {
-                "grab": {
-                    "distance": 140,
-                    "line_linked": {
-                        "opacity": 1
-                    }
-                }
-            }
-        },
-        "retina_detect": true
-    });
-}
-
-const hamburger = document.getElementById('hamburger');
-const navMenu = document.getElementById('nav-menu');
-
-hamburger.addEventListener('click', () => {
-    navMenu.classList.toggle('active');
-    hamburger.classList.toggle('active');
-});
-
-document.querySelectorAll('.nav-link').forEach(link => {
-    link.addEventListener('click', () => {
-        navMenu.classList.remove('active');
-        hamburger.classList.remove('active');
-    });
-});
-
-const navbar = document.getElementById('navbar');
-window.addEventListener('scroll', () => {
-    if (window.scrollY > 50) {
-        navbar.classList.add('scrolled');
     } else {
-        navbar.classList.remove('scrolled');
+        themeIcon.classList.remove('fa-moon');
+        themeIcon.classList.add('fa-sun');
     }
-});
+}
 
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
-        e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        if (target) {
-            const offsetTop = target.offsetTop - 70;
-            window.scrollTo({
-                top: offsetTop,
-                behavior: 'smooth'
-            });
-        }
-    });
-});
+// Expose to window for terminal access
+window.setTheme = setTheme;
 
+/* ===== SCROLL PROGRESS BAR ===== */
+function updateScrollProgress() {
+    const scrolled = window.scrollY;
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+    const progress = maxScroll > 0 ? (scrolled / maxScroll) * 100 : 0;
+    document.getElementById('scroll-progress').style.width = progress + '%';
+}
+
+/* ===== NAVBAR VISIBILITY ===== */
+let lastScroll = 0;
+const navbar = document.getElementById('navbar');
+
+function updateNavbar() {
+    const currentScroll = window.scrollY;
+    if (currentScroll > 100) {
+        navbar.classList.add('visible');
+    } else {
+        navbar.classList.remove('visible');
+    }
+    lastScroll = currentScroll;
+}
+
+/* ===== ACTIVE NAV LINK HIGHLIGHTING ===== */
 const sections = document.querySelectorAll('section[id]');
-const navLinks = document.querySelectorAll('.nav-link');
+const navLinks = document.querySelectorAll('.nav-links a');
 
-function highlightNavLink() {
+function updateActiveLink() {
     let current = '';
-    const scrollPosition = window.pageYOffset + 150;
+    const scrollPos = window.scrollY + 150;
 
     sections.forEach(section => {
         const sectionTop = section.offsetTop;
         const sectionHeight = section.offsetHeight;
         const sectionId = section.getAttribute('id');
 
-        if (scrollPosition >= sectionTop && scrollPosition < sectionTop + sectionHeight) {
+        if (scrollPos >= sectionTop && scrollPos < sectionTop + sectionHeight) {
             current = sectionId;
         }
     });
 
     navLinks.forEach(link => {
         link.classList.remove('active');
-        const linkHref = link.getAttribute('href');
-        if (linkHref === `#${current}`) {
+        if (link.getAttribute('href') === '#' + current) {
             link.classList.add('active');
         }
     });
 }
 
-window.addEventListener('scroll', highlightNavLink);
-
-const observerOptions = {
-    threshold: 0.1,
-    rootMargin: '0px 0px -50px 0px'
-};
-
-const revealObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            entry.target.classList.add('revealed');
-        }
-    });
-}, observerOptions);
-
-document.querySelectorAll('.skill-card, .archive-card, .link-card, .info-item, .project-showcase, .section-title, .section-subtitle').forEach(el => {
-    el.classList.add('reveal-element');
-    revealObserver.observe(el);
+/* ===== COMBINED SCROLL HANDLER (Performance) ===== */
+let ticking = false;
+window.addEventListener('scroll', () => {
+    if (!ticking) {
+        requestAnimationFrame(() => {
+            updateScrollProgress();
+            updateNavbar();
+            updateActiveLink();
+            ticking = false;
+        });
+        ticking = true;
+    }
 });
 
-document.querySelectorAll('.skills-row, .archive-grid, .links-grid').forEach(container => {
-    const cards = container.querySelectorAll('.skill-card, .archive-card, .link-card');
-    cards.forEach((card, index) => {
-        card.style.transitionDelay = `${index * 0.1}s`;
+/* ===== MOBILE HAMBURGER MENU ===== */
+const hamburger = document.getElementById('hamburger');
+const navMenu = document.getElementById('nav-links');
+
+hamburger.addEventListener('click', () => {
+    hamburger.classList.toggle('active');
+    navMenu.classList.toggle('active');
+});
+
+document.querySelectorAll('.nav-links a').forEach(link => {
+    link.addEventListener('click', () => {
+        hamburger.classList.remove('active');
+        navMenu.classList.remove('active');
     });
 });
 
-const terminal = document.querySelector('.terminal-window');
-if (terminal) {
-    document.addEventListener('mousemove', (e) => {
-        if (window.innerWidth > 768) {
-            const rect = terminal.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
-
-            const moveX = (e.clientX - centerX) / 50;
-            const moveY = (e.clientY - centerY) / 50;
-
-            terminal.style.transform = `translateY(${-10 + moveY}px) rotateX(${-moveY * 0.5}deg) rotateY(${moveX * 0.5}deg)`;
+/* ===== SMOOTH SCROLL FOR ANCHOR LINKS ===== */
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            window.scrollTo({
+                top: target.offsetTop - 70,
+                behavior: 'smooth'
+            });
         }
     });
+});
 
-    document.querySelector('.home-visual').addEventListener('mouseleave', () => {
-        terminal.style.transform = '';
-    });
-}
-
+/* ===== TERMINAL CLI ===== */
 const terminalInput = document.getElementById('terminal-input');
 const terminalOutput = document.getElementById('terminal-output');
 const terminalBody = document.getElementById('terminal-body');
 
+// Track if theme options are currently shown
+let themeOptionsVisible = false;
+
 const commands = {
-    help: "Available commands: <span class='t-keyword'>about</span>, <span class='t-keyword'>skills</span>, <span class='t-keyword'>projects</span>, <span class='t-keyword'>contact</span>, <span class='t-keyword'>clear</span>",
-    about: "Final year CSE student. Passionate about <span class='t-string'>Deep Learning</span> and creating <span class='t-function'>Trusted Datasets</span> for research.",
-    skills: "['Python', 'TensorFlow', 'Java', 'MySQL', 'MongoDB', 'Data Analysis','C/C++', 'php','HTML/CSS','js']",
-    projects: "Featured: <span class='t-function'>Deepfake Detection Model</span> (91% Accuracy). Check the Projects section for more!",
-    contact: "Email: <span class='t-string'>2022100000084@seu.edu.bd</span>",
+    help: "Available commands: <span class='t-keyword'>about</span>, <span class='t-keyword'>skills</span>, <span class='t-keyword'>projects</span>, <span class='t-keyword'>contact</span>, <span class='t-keyword'>theme</span>, <span class='t-keyword'>clear</span>",
+    about: "Final year CSE student. Passionate about <span class='t-string'>Deep Learning</span> and creating <span class='t-func'>Trusted Datasets</span> for research.",
+    skills: "['Python', 'TensorFlow', 'Java', 'MySQL', 'MongoDB', 'Data Analysis', 'C/C++', 'PHP', 'HTML/CSS', 'JavaScript']",
+    projects: "Featured: <span class='t-func'>Deepfake Detection Model</span> (91% Accuracy). Check the Projects section for more!",
+    contact: "Email: <span class='t-string'>nadimdewan789@gmail.com</span>",
     sudo: "<span class='t-error'>Permission denied: user is not in the sudoers file. This incident will be reported.</span>",
     whoami: "visitor"
 };
 
+function scrollToBottom() {
+    terminalBody.scrollTop = terminalBody.scrollHeight;
+}
+
+function addOutputLine(html, className = 'terminal-line') {
+    const line = document.createElement('div');
+    line.className = className;
+    line.innerHTML = html;
+    terminalOutput.appendChild(line);
+    scrollToBottom();
+}
+
 if (terminalInput) {
-    terminalInput.addEventListener('keydown', function(event) {
-        if (event.key === 'Enter') {
-            const input = this.value.trim().toLowerCase();
-            const historyLine = document.createElement('div');
-            historyLine.className = 'terminal-line';
-            historyLine.innerHTML = `<span class="t-path">visitor@nadim:~$</span> ${this.value}`;
-            terminalOutput.appendChild(historyLine);
+    terminalInput.addEventListener('keydown', function (event) {
+        if (event.key !== 'Enter') return;
 
-            if (input === 'clear') {
-                terminalOutput.innerHTML = '';
-            } else if (commands[input]) {
-                const responseLine = document.createElement('div');
-                responseLine.className = 'terminal-line indent';
-                responseLine.innerHTML = commands[input];
-                terminalOutput.appendChild(responseLine);
-            } else if (input !== '') {
-                const errorLine = document.createElement('div');
-                errorLine.className = 'terminal-line';
-                errorLine.innerHTML = `<span class="t-error">Command not found: ${input}. Type 'help' for list.</span>`;
-                terminalOutput.appendChild(errorLine);
+        const rawInput = this.value;
+        const input = rawInput.trim().toLowerCase();
+
+        // Echo the command
+        addOutputLine(`<span class="t-prompt">visitor@nadim:~$</span> ${escapeHtml(rawInput)}`);
+
+        if (input === 'clear') {
+            terminalOutput.innerHTML = '';
+        }
+        else if (input === 'theme') {
+            themeOptionsVisible = true;
+            addOutputLine(`<span class="t-comment"># Available themes:</span>`);
+            addOutputLine(`  <span class="t-option">→ dark</span>  — Deep focus mode`);
+            addOutputLine(`  <span class="t-option">→ light</span> — Daylight mode`);
+            addOutputLine(`<span class="t-comment"># Type 'dark' or 'light' to switch</span>`);
+        }
+        else if (input === 'dark' || input === 'light') {
+            if (themeOptionsVisible || commands[input]) {
+                setTheme(input);
+                addOutputLine(`<span class="t-comment"># Switched to ${input} mode ✓</span>`);
+            } else {
+                addOutputLine(`<span class="t-error">Command not found: ${escapeHtml(rawInput)}. Type 'help' for list.</span>`);
             }
+            themeOptionsVisible = false;
+        }
+        else if (commands[input]) {
+            addOutputLine(commands[input]);
+            themeOptionsVisible = false;
+        }
+        else if (input !== '') {
+            addOutputLine(`<span class="t-error">Command not found: ${escapeHtml(rawInput)}. Type 'help' for list.</span>`);
+            themeOptionsVisible = false;
+        }
 
-            this.value = '';
-            setTimeout(() => {
-                terminalBody.scrollTop = terminalBody.scrollHeight;
-            }, 10);
+        this.value = '';
+    });
+
+    // Click anywhere in terminal to focus input
+    terminalBody.addEventListener('click', (e) => {
+        if (e.target !== terminalInput) {
+            terminalInput.focus();
         }
     });
+}
 
-    terminalBody.addEventListener('click', () => {
-        terminalInput.focus();
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+/* ===== CONTACT FORM (EmailJS) ===== */
+const contactForm = document.getElementById("contact-form");
+
+if (contactForm) {
+    contactForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        const submitBtn = document.getElementById("submit-btn");
+        const formStatus = document.getElementById("form-status");
+        const originalHTML = submitBtn.innerHTML;
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span>Sending...</span> <i class="fas fa-spinner fa-spin"></i>';
+        formStatus.className = 'form-status';
+        formStatus.style.display = 'none';
+
+        emailjs.sendForm(
+            "service_t11infl",
+            "template_5hioo67",
+            this,
+            { publicKey: "d643sEDf9emYliwTf" }
+        )
+            .then(() => {
+                showSuccessMessage();
+            })
+            .catch((error) => {
+                console.error("EmailJS Error:", error);
+                // Handle false negative JSON parse errors
+                if (error.message && (error.message.includes("Unexpected token") || error.message.includes("valid JSON"))) {
+                    showSuccessMessage();
+                } else {
+                    formStatus.className = 'form-status error';
+                    formStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Failed to send. Please try again later.';
+                    formStatus.style.display = 'block';
+                }
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalHTML;
+            });
+
+        function showSuccessMessage() {
+            formStatus.className = 'form-status success';
+            formStatus.innerHTML = '<i class="fas fa-check-circle"></i> Email sent successfully!';
+            formStatus.style.display = 'block';
+            contactForm.reset();
+        }
     });
 }
+
+/* ===== AUTO-UPDATE COPYRIGHT YEAR ===== */
+const yearSpan = document.getElementById('year');
+if (yearSpan) {
+    yearSpan.textContent = new Date().getFullYear();
+}
+
+/* ===== KEYBOARD SHORTCUTS ===== */
+document.addEventListener('keydown', (e) => {
+    // Ctrl/Cmd + K to focus terminal
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        if (terminalInput) {
+            terminalInput.focus();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+});
